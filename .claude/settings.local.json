@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer --version)",
+      "Bash(docker compose *)",
+      "Bash(open -a \"Rancher Desktop\")",
+      "Bash(open -a \"Docker Desktop\")",
+      "Bash(docker info *)",
+      "Bash(break)",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(xargs cat *)"
+    ]
+  }
+}
