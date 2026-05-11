@@ -21,6 +21,90 @@
                 </button>
             </div>
 
+            {{-- ── Pending Shared Expenses Inbox ── --}}
+            @if(isset($pendingShared) && $pendingShared->isNotEmpty())
+                <div x-data="{ open: false }"
+                     class="rounded-2xl border border-amber-200 dark:border-amber-900
+                            bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30
+                            shadow-sm overflow-hidden">
+
+                    {{-- Alert header --}}
+                    <div class="px-5 py-4 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                                    {{ trans_choice('messages.pending_shared_alert', $pendingShared->count(), [
+                                        'name'  => $user->roommate?->name ?? 'Your roommate',
+                                        'count' => $pendingShared->count(),
+                                    ]) }}
+                                </p>
+                            </div>
+                        </div>
+                        <button @click="open = !open"
+                                class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg
+                                       bg-amber-600 hover:bg-amber-700 text-white transition-colors">
+                            <span x-text="open ? '{{ __('messages.cancel') }}' : '{{ __('messages.review_pending') }}'"></span>
+                            <svg class="w-3 h-3 transition-transform" :class="open ? 'rotate-180' : ''"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    {{-- Expandable list --}}
+                    <div x-show="open"
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="border-t border-amber-200 dark:border-amber-900">
+                        <ul class="divide-y divide-amber-100 dark:divide-amber-900/50">
+                            @foreach($pendingShared as $pending)
+                                <li class="flex items-center gap-4 px-5 py-3
+                                           bg-white/40 dark:bg-gray-900/40 hover:bg-white/70 dark:hover:bg-gray-900/70 transition-colors">
+                                    <x-category-icon :category="$pending->category"/>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                            {{ $pending->description ?? '—' }}
+                                        </p>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="inline-block px-2 py-px rounded-full text-xs font-medium
+                                                         bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                                                {{ $pending->category }}
+                                            </span>
+                                            <span class="text-xs text-gray-400 dark:text-gray-500">
+                                                {{ $pending->expense_date->format('M d, Y') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm font-bold whitespace-nowrap tabular-nums text-gray-900 dark:text-gray-100">
+                                        {{ $pending->formattedAmount() }}
+                                    </p>
+                                    <form method="POST" action="{{ route('expenses.accept-shared', $pending) }}" class="shrink-0">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit"
+                                                class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors
+                                                       bg-green-600 hover:bg-green-700 text-white">
+                                            {{ __('messages.accept_shared') }}
+                                        </button>
+                                    </form>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
+
             {{-- ── Flash Messages ── --}}
             @if(session('success'))
                 <div
@@ -185,7 +269,23 @@
                 </div>
 
                 <form method="GET" action="{{ route('dashboard') }}" class="px-6 py-4">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+
+                        {{-- View (Personal / Shared / All) — only useful when a roommate is linked --}}
+                        @if($user->roommate_id)
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                                {{ __('messages.filter_view') }}
+                            </label>
+                            <select name="view"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400
+                                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+                                <option value=""         {{ request('view') === ''         ? 'selected' : '' }}>{{ __('messages.filter_view_all') }}</option>
+                                <option value="personal" {{ request('view') === 'personal' ? 'selected' : '' }}>{{ __('messages.filter_view_personal') }}</option>
+                                <option value="shared"   {{ request('view') === 'shared'   ? 'selected' : '' }}>{{ __('messages.filter_view_shared') }}</option>
+                            </select>
+                        </div>
+                        @endif
 
                         {{-- Category --}}
                         <div>
@@ -305,12 +405,33 @@
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                         {{ $expense->description ?? '—' }}
                                     </p>
-                                    <div class="flex items-center gap-2 mt-0.5">
+                                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                                         <span class="inline-block px-2 py-px rounded-full text-xs font-medium
                                                      bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400
                                                      whitespace-nowrap">
                                             {{ $expense->category }}
                                         </span>
+                                        @if($expense->shared_status === \App\Models\Expense::SHARED_SHARED)
+                                            <span class="inline-flex items-center gap-1 px-2 py-px rounded-full text-xs font-medium
+                                                         bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300
+                                                         whitespace-nowrap">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                </svg>
+                                                {{ __('messages.shared_badge') }}
+                                            </span>
+                                        @elseif($expense->shared_status === \App\Models\Expense::SHARED_PENDING)
+                                            <span class="inline-flex items-center gap-1 px-2 py-px rounded-full text-xs font-medium
+                                                         bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300
+                                                         whitespace-nowrap">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                {{ __('messages.pending_badge') }}
+                                            </span>
+                                        @endif
                                         <span class="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
                                             {{ $expense->expense_date->format('M d, Y') }}
                                         </span>
@@ -635,6 +756,27 @@
                                 </div>
 
                             </div>
+
+                            {{-- Share with Roommate (only if a roommate is linked) --}}
+                            @if($user->roommate_id)
+                                <label class="mt-5 flex items-start gap-3 p-3 rounded-xl
+                                              bg-indigo-50 dark:bg-indigo-950/40
+                                              border border-indigo-100 dark:border-indigo-900 cursor-pointer
+                                              hover:bg-indigo-100/60 dark:hover:bg-indigo-950/70 transition-colors">
+                                    <input type="checkbox" name="share_with_roommate" value="1"
+                                           {{ old('share_with_roommate') ? 'checked' : '' }}
+                                           class="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600
+                                                  focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
+                                            {{ __('messages.share_with_roommate') }}
+                                        </p>
+                                        <p class="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-0.5">
+                                            {{ __('messages.share_with_roommate_hint') }}
+                                        </p>
+                                    </div>
+                                </label>
+                            @endif
 
                             {{-- Form actions --}}
                             <div class="flex items-center justify-end gap-3 mt-6 pt-5

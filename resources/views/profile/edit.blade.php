@@ -15,6 +15,12 @@
 
             <div class="p-6 sm:p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
                 <div class="max-w-xl">
+                    @include('profile.partials.roommate-connection')
+                </div>
+            </div>
+
+            <div class="p-6 sm:p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+                <div class="max-w-xl">
                     @include('profile.partials.update-password-form')
                 </div>
             </div>

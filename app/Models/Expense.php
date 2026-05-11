@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'amount', 'currency', 'original_amount', 'original_currency', 'base_amount', 'exchange_rate', 'description', 'category', 'expense_date'])]
+#[Fillable(['user_id', 'amount', 'currency', 'original_amount', 'original_currency', 'base_amount', 'exchange_rate', 'description', 'category', 'expense_date', 'shared_status'])]
 class Expense extends Model
 {
     /** @use HasFactory<ExpenseFactory> */
@@ -16,6 +16,12 @@ class Expense extends Model
 
     /** Supported currency codes (ISO 4217). */
     public const CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'];
+
+    /** Shared expense lifecycle. */
+    public const SHARED_PERSONAL = 'personal';
+    public const SHARED_PENDING  = 'pending';
+    public const SHARED_SHARED   = 'shared';
+    public const SHARED_STATUSES = [self::SHARED_PERSONAL, self::SHARED_PENDING, self::SHARED_SHARED];
 
     /** Currency symbol map for display. */
     private const SYMBOLS = [

@@ -7,12 +7,13 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'default_currency', 'high_spend_threshold'])]
+#[Fillable(['name', 'email', 'password', 'default_currency', 'high_spend_threshold', 'roommate_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -36,5 +37,14 @@ class User extends Authenticatable
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    /**
+     * The linked roommate (1-to-1 mutual link).
+     * When A.roommate_id = B.id, then B.roommate_id should also = A.id.
+     */
+    public function roommate(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'roommate_id');
     }
 }

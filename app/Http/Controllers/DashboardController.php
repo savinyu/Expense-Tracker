@@ -17,33 +17,40 @@ class DashboardController extends Controller
 
     public function index(Request $request): View
     {
-        $user            = auth()->user();
+        $user            = auth()->user()->load('roommate');
         $defaultCurrency = $user->default_currency ?? 'JPY';
+        $roommateId      = $user->roommate_id;
 
-        // ── Determine whether any filter is active ──────────────────────────
+        // ── Active filter detection ─────────────────────────────────────────
         $activeFilters = array_filter(
-            $request->only(['category', 'start_date', 'end_date', 'original_currency'])
+            $request->only(['category', 'start_date', 'end_date', 'original_currency', 'view'])
         );
         $hasFilters = !empty($activeFilters);
 
-        // ── Base query factory — always returns a fresh Eloquent Builder ─────
-        // Using Expense::where() instead of $user->expenses() avoids the
-        // HasMany → Builder type mismatch when passed to applyFilters().
-        $base = fn () => Expense::where('user_id', $user->id);
+        // ── Visibility scope ─────────────────────────────────────────────────
+        // A user can see:
+        //   1. All of their own expenses (any shared_status), AND
+        //   2. Their roommate's expenses marked as 'shared' (accepted)
+        $base = fn () => Expense::query()->where(function (Builder $q) use ($user, $roommateId) {
+            $q->where('user_id', $user->id);
 
-        // ── Filtered expense list (used for the table) ──────────────────────
+            if ($roommateId) {
+                $q->orWhere(function (Builder $qq) use ($roommateId) {
+                    $qq->where('user_id', $roommateId)
+                       ->where('shared_status', Expense::SHARED_SHARED);
+                });
+            }
+        });
+
+        // ── Filtered expense list ────────────────────────────────────────────
         $expenses = $this->applyFilters($base()->latest('expense_date'), $request)->get();
 
         // ── Summary KPIs ─────────────────────────────────────────────────────
-        // When filters are active: stats reflect the filtered set.
-        // When no filters:         stats always show the current calendar month.
-        if ($hasFilters) {
-            $statsQuery = fn () => $this->applyFilters($base(), $request);
-        } else {
-            $statsQuery = fn () => $base()
+        $statsQuery = $hasFilters
+            ? fn () => $this->applyFilters($base(), $request)
+            : fn () => $base()
                 ->whereYear('expense_date', now()->year)
                 ->whereMonth('expense_date', now()->month);
-        }
 
         $primaryTotal     = (int) $statsQuery()->sum('base_amount');
         $transactionCount = $statsQuery()->count();
@@ -58,6 +65,16 @@ class DashboardController extends Controller
         $defaultThreshold   = in_array($defaultCurrency, ['JPY']) ? 10000 : 100;
         $highSpendThreshold = $user->high_spend_threshold ?? $defaultThreshold;
 
+        // ── Pending inbox ────────────────────────────────────────────────────
+        // Expenses my roommate created with shared_status='pending', awaiting my review.
+        $pendingShared = collect();
+        if ($roommateId) {
+            $pendingShared = Expense::where('user_id', $roommateId)
+                ->where('shared_status', Expense::SHARED_PENDING)
+                ->latest('expense_date')
+                ->get();
+        }
+
         return view('dashboard', compact(
             'expenses',
             'primaryTotal',
@@ -67,13 +84,26 @@ class DashboardController extends Controller
             'highSpendThreshold',
             'activeFilters',
             'hasFilters',
+            'user',
+            'pendingShared',
         ));
     }
 
     public function categoryBreakdown(Request $request): JsonResponse
     {
-        $user  = auth()->user();
-        $query = Expense::where('user_id', $user->id);
+        $user       = auth()->user();
+        $roommateId = $user->roommate_id;
+
+        // Same visibility scope as the dashboard table — keeps the chart in sync.
+        $query = Expense::query()->where(function (Builder $q) use ($user, $roommateId) {
+            $q->where('user_id', $user->id);
+            if ($roommateId) {
+                $q->orWhere(function (Builder $qq) use ($roommateId) {
+                    $qq->where('user_id', $roommateId)
+                       ->where('shared_status', Expense::SHARED_SHARED);
+                });
+            }
+        });
 
         // Default to current month when no date filter is supplied.
         $hasDateFilter = $request->filled('start_date') || $request->filled('end_date');
@@ -95,11 +125,12 @@ class DashboardController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'amount'       => ['required', 'numeric', 'min:0.01'],
-            'currency'     => ['required', 'string', Rule::in(Expense::CURRENCIES)],
-            'category'     => ['required', 'string', 'max:100'],
-            'expense_date' => ['required', 'date'],
-            'description'  => ['nullable', 'string', 'max:255'],
+            'amount'              => ['required', 'numeric', 'min:0.01'],
+            'currency'            => ['required', 'string', Rule::in(Expense::CURRENCIES)],
+            'category'            => ['required', 'string', 'max:100'],
+            'expense_date'        => ['required', 'date'],
+            'description'         => ['nullable', 'string', 'max:255'],
+            'share_with_roommate' => ['nullable', 'boolean'],
         ]);
 
         $user            = auth()->user();
@@ -111,6 +142,12 @@ class DashboardController extends Controller
         ['base_amount' => $baseAmount, 'exchange_rate' => $rate] =
             $this->fx->convert($originalAmount, $originalCurrency, $defaultCurrency);
 
+        // Mark as 'pending' if the user opted to share AND they actually have a roommate.
+        // Without a roommate, the checkbox should never appear — but defend in depth.
+        $sharedStatus = ($request->boolean('share_with_roommate') && $user->roommate_id)
+            ? Expense::SHARED_PENDING
+            : Expense::SHARED_PERSONAL;
+
         $user->expenses()->create([
             'amount'            => $originalAmount,
             'currency'          => $originalCurrency,
@@ -121,16 +158,36 @@ class DashboardController extends Controller
             'category'          => $validated['category'],
             'expense_date'      => $validated['expense_date'],
             'description'       => $validated['description'] ?? null,
+            'shared_status'     => $sharedStatus,
         ]);
 
         return redirect()->route('dashboard')->with('success', 'messages.expense_added');
     }
 
+    /**
+     * Roommate accepts a pending shared expense.
+     */
+    public function acceptShared(Request $request, Expense $expense): RedirectResponse
+    {
+        $user = auth()->user();
+
+        // Only the linked roommate of the creator can accept, and the expense
+        // must still be in 'pending' state.
+        if ($expense->user_id !== $user->roommate_id ||
+            $expense->shared_status !== Expense::SHARED_PENDING) {
+            abort(403);
+        }
+
+        $expense->update(['shared_status' => Expense::SHARED_SHARED]);
+
+        return back()->with('success', 'messages.shared_accepted');
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Apply the four dashboard filters to an existing query builder.
-     * Uses `when()` so missing / empty params are silently skipped.
+     * Apply the five dashboard filters to an existing query builder.
+     *   - category, start_date, end_date, original_currency, view (all/personal/shared)
      */
     private function applyFilters(Builder $query, Request $request): Builder
     {
@@ -150,6 +207,14 @@ class DashboardController extends Controller
             ->when(
                 $request->filled('original_currency'),
                 fn ($q) => $q->where('original_currency', $request->input('original_currency'))
+            )
+            ->when(
+                $request->input('view') === 'personal',
+                fn ($q) => $q->where('shared_status', Expense::SHARED_PERSONAL)
+            )
+            ->when(
+                $request->input('view') === 'shared',
+                fn ($q) => $q->where('shared_status', Expense::SHARED_SHARED)
             );
     }
 }

@@ -28,6 +28,38 @@ return [
     'delete_account_confirm_desc'=> 'アカウントを削除すると、すべてのデータが完全に削除されます。削除を確認するためにパスワードを入力してください。',
     'password'                   => 'パスワード',
 
+    // Roommate
+    'roommate_connection'        => 'ルームメイト連携',
+    'roommate_connection_desc'   => 'ルームメイトと連携して支出を共有できます。共有には両者の承認が必要です。',
+    'roommate_invite_label'      => 'ルームメイトのメールアドレス',
+    'roommate_invite_hint'       => '既に登録されているユーザーのメールアドレスを入力してください。',
+    'roommate_link'              => '連携する',
+    'roommate_linked_with'       => '連携中:',
+    'roommate_unlink'            => '連携を解除',
+    'roommate_unlink_confirm'    => '本当に解除しますか？共有された支出はすべて個人用に戻ります。',
+    'roommate_linked_success'    => 'ルームメイトを連携しました。',
+    'roommate_unlinked_success'  => 'ルームメイトとの連携を解除しました。共有支出は個人用に戻ります。',
+    'roommate_not_found'         => '該当するユーザーが見つかりません。',
+    'roommate_self'              => '自分自身をルームメイトに登録することはできません。',
+    'roommate_already_linked'    => '既に他のルームメイトと連携中です。先に解除してください。',
+    'roommate_other_taken'       => 'そのユーザーは既に別の人と連携中です。',
+
+    // Shared expenses
+    'share_with_roommate'        => 'ルームメイトと共有',
+    'share_with_roommate_hint'   => '共有扱いになるにはルームメイトの承認が必要です。',
+    'pending_shared_alert'       => ':name さんが :count 件の共有支出を申請しました。',
+    'review_pending'             => '確認する',
+    'accept_shared'              => '承認',
+    'shared_accepted'            => '共有支出を承認しました。',
+    'shared_badge'               => '共有',
+    'pending_badge'              => '承認待ち',
+
+    // View filter
+    'filter_view'                => '表示',
+    'filter_view_all'            => 'すべて',
+    'filter_view_personal'       => '個人のみ',
+    'filter_view_shared'         => '共有のみ',
+
     // Navigation
     'profile'               => 'プロフィール',
     'download_csv'          => 'データをダウンロード (CSV)',

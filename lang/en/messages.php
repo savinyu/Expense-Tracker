@@ -28,6 +28,38 @@ return [
     'delete_account_confirm_desc'=> 'Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.',
     'password'                   => 'Password',
 
+    // Roommate
+    'roommate_connection'        => 'Roommate Connection',
+    'roommate_connection_desc'   => 'Link with one roommate to share expenses. Both of you must agree to share each expense.',
+    'roommate_invite_label'      => "Roommate's Email",
+    'roommate_invite_hint'       => 'Enter the email of an existing user.',
+    'roommate_link'              => 'Link Roommate',
+    'roommate_linked_with'       => 'Linked with',
+    'roommate_unlink'            => 'Unlink Roommate',
+    'roommate_unlink_confirm'    => 'Are you sure? Your shared expenses will be returned to personal.',
+    'roommate_linked_success'    => 'Roommate linked successfully.',
+    'roommate_unlinked_success'  => 'Roommate unlinked. Shared expenses reverted to personal.',
+    'roommate_not_found'         => 'No user found with that email.',
+    'roommate_self'              => 'You cannot link yourself as a roommate.',
+    'roommate_already_linked'    => 'You already have a roommate linked. Unlink first to switch.',
+    'roommate_other_taken'       => 'That user is already linked with someone else.',
+
+    // Shared expenses
+    'share_with_roommate'        => 'Share with Roommate',
+    'share_with_roommate_hint'   => 'Your roommate will review and accept before it counts as shared.',
+    'pending_shared_alert'       => '{1} :name added :count shared expense awaiting your review.|[2,*] :name added :count shared expenses awaiting your review.',
+    'review_pending'             => 'Review',
+    'accept_shared'              => 'Accept',
+    'shared_accepted'            => 'Shared expense accepted.',
+    'shared_badge'               => 'Shared',
+    'pending_badge'              => 'Pending review',
+
+    // View filter
+    'filter_view'                => 'View',
+    'filter_view_all'            => 'All',
+    'filter_view_personal'       => 'Personal Only',
+    'filter_view_shared'         => 'Shared Only',
+
     // Navigation
     'profile'               => 'Profile',
     'download_csv'          => 'Download Data (CSV)',
