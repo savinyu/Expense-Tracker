@@ -1,59 +1,80 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 💸 Multi-Currency Expense Tracker
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A robust, enterprise-grade expense tracking application built for seamless multi-currency management. This project was developed as a hackathon submission, focusing on real-time currency conversion, reactive data visualization, and a highly customizable user experience.
 
-## About Laravel
+## ✨ Key Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+* **Dual-Currency Tracking & Live Conversion:** 
+  Log expenses in any currency (from receipts or manual entry). The app automatically fetches live exchange rates, stores the original amount, and calculates a unified `base_amount` in the user's default currency for accurate analytics.
+* **Intelligent API Caching:** 
+  Integrates with `open.er-api.com` using a smart 1-hour cache layer to prevent rate-limiting and ensure lightning-fast dashboard loads.
+* **Interactive Data Visualization:** 
+  Features dynamic, reactive pie charts built with Chart.js and Alpine.js. Engineered with a "stateless" architecture to prevent reactivity memory leaks while maintaining real-time UI updates.
+* **Dynamic High-Spend Alerts:** 
+  Automatically highlights expensive transactions. The system dynamically scales the alert threshold based on currency denomination (e.g., $100 for USD vs. ¥10,000 for JPY), or users can set a custom threshold in their profile settings.
+* **Advanced Data Filtering:** 
+  Slice and dice expense data via a URL-bookmarkable, GET-parameter filter panel (Date Range, Category, and Original Currency) that instantly syncs with the dashboard charts.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠️ Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* **Backend:** Laravel (PHP), MySQL
+* **Frontend:** Blade, Tailwind CSS, Alpine.js
+* **Data Visualization:** Chart.js
+* **Environment:** Docker (Laravel Sail)
 
-## Learning Laravel
+## 🚀 Getting Started
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Prerequisites
+Make sure you have [Docker](https://www.docker.com/) installed and running on your machine.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Installation
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/YOUR-USERNAME/expense-tracker-hackathon.git](https://github.com/YOUR-USERNAME/expense-tracker-hackathon.git)
+   cd expense-tracker-hackathon
+2. **Set up your environment file:**
 
-## Agentic Development
+    ```Bash
+    cp .env.example .env
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
 
-```bash
-composer require laravel/boost --dev
+3. **Install PHP dependencies (via Docker):**
+   ```bash
+   docker run --rm \
+       -u "$(id -u):$(id -g)" \
+       -v $(pwd):/var/www/html \
+       -w /var/www/html \
+       laravelsail/php8.2-composer:latest \
+       composer install --ignore-platform-reqs
+4. Start the Docker containers:
 
-php artisan boost:install
-```
+    ```Bash
+    ./vendor/bin/sail up -d
+# Or if using raw Docker Compose: docker compose up -d
+Generate the application key:
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+    docker compose exec app php artisan key:generate
+    Run Migrations and Seed the Database:
+This will create the necessary tables and populate the app with realistic, multi-currency dummy data for testing.
 
-## Contributing
+    docker compose exec app php artisan migrate:fresh --seed
+Compile Frontend Assets:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    
+    npm install
+    npm run dev
+⚙️ Configuration
+Exchange Rate API:
+This project uses a free, open API for live exchange rates. By default, it requires no API key. If you experience rate limits, or wish to upgrade to a provider requiring a key, add it to your .env file:
 
-## Code of Conduct
+Code snippet
+EXCHANGE_RATE_API_KEY=your_key_here
+Note: If you make changes to the .env file, ensure you clear the config cache:
+    
+    docker compose exec app php artisan config:clear
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# Expense-Tracker
+🧹 Useful Commands
+If you need to force the app to fetch fresh exchange rates (bypassing the 1-hour cache), run:
+    
+    docker compose exec app php artisan cache:clear
