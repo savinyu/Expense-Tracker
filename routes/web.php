@@ -53,5 +53,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Accept a pending shared expense from your roommate
     Route::patch('/expenses/{expense}/accept-shared', [DashboardController::class, 'acceptShared'])->name('expenses.accept-shared');
 });
+use Illuminate\Support\Facades\Artisan;
 
+Route::get('/setup-db', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return 'Database migrated successfully!';
+});
 require __DIR__.'/auth.php';
