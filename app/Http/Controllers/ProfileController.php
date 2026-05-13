@@ -5,16 +5,20 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Expense;
 use App\Models\User;
+use App\Services\ExchangeRateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(private readonly ExchangeRateService $fx) {}
+
     public function edit(Request $request): View
     {
         return view('profile.edit', [
@@ -24,15 +28,75 @@ class ProfileController extends Controller
 
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user      = $request->user();
+        $validated = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // ── Detect default-currency change BEFORE filling ────────────────────
+        // Compare the incoming value against what's currently on the model so
+        // we know whether to trigger a rebase pass over the user's expenses.
+        $oldCurrency      = $user->default_currency;
+        $newCurrency      = $validated['default_currency'] ?? $oldCurrency;
+        $currencyChanged  = $newCurrency !== $oldCurrency;
+
+        $user->fill($validated);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        // ── Rebase all expenses if the default currency changed ──────────────
+        if ($currencyChanged) {
+            $rebased = $this->rebaseUserExpenses($user, $newCurrency);
+            Log::info("Rebased {$rebased} expenses for user {$user->id}: {$oldCurrency} → {$newCurrency}");
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Recalculate base_amount + exchange_rate for every expense the user owns,
+     * converting from each expense's own original_currency into $newCurrency.
+     *
+     * Uses ExchangeRateService (cached rates) and runs inside a transaction so
+     * a partial failure can't leave half the expenses on the new currency and
+     * half on the old.
+     *
+     * @return int Number of expenses updated.
+     */
+    private function rebaseUserExpenses(User $user, string $newCurrency): int
+    {
+        $updated = 0;
+
+        DB::transaction(function () use ($user, $newCurrency, &$updated) {
+            // chunkById is memory-safe even if the user has thousands of rows.
+            $user->expenses()->chunkById(200, function ($expenses) use ($newCurrency, &$updated) {
+                foreach ($expenses as $expense) {
+                    // Defensive: skip rows that are missing the original-currency
+                    // data we'd need to do the conversion safely.
+                    if (!$expense->original_amount || !$expense->original_currency) {
+                        continue;
+                    }
+
+                    ['base_amount' => $newBase, 'exchange_rate' => $newRate] =
+                        $this->fx->convert(
+                            $expense->original_amount,
+                            $expense->original_currency,
+                            $newCurrency,
+                        );
+
+                    $expense->update([
+                        'base_amount'   => $newBase,
+                        'exchange_rate' => $newRate,
+                    ]);
+
+                    $updated++;
+                }
+            });
+        });
+
+        return $updated;
     }
 
     public function destroy(Request $request): RedirectResponse
