@@ -58,7 +58,7 @@
                 @foreach(\App\Models\Expense::CURRENCIES as $currency)
                     <option value="{{ $currency }}"
                         {{ old('default_currency', $user->default_currency ?? 'JPY') === $currency ? 'selected' : '' }}>
-                        {{ $currency }}
+                        {{ \App\Models\Expense::label($currency) }}
                     </option>
                 @endforeach
             </select>
@@ -66,8 +66,8 @@
         </div>
 
         @php
-            $thresholdSymbol = ['JPY'=>'¥','USD'=>'$','EUR'=>'€','GBP'=>'£','AUD'=>'A$','CAD'=>'C$','SGD'=>'S$'][$user->default_currency ?? 'JPY'] ?? '';
-            $thresholdPlaceholder = in_array($user->default_currency ?? 'JPY', ['JPY']) ? '10000' : '100';
+            $thresholdSymbol      = \App\Models\Expense::symbol($user->default_currency ?? 'JPY');
+            $thresholdPlaceholder = in_array($user->default_currency ?? 'JPY', ['JPY', 'INR']) ? '10000' : '100';
         @endphp
         <div>
             <x-input-label for="high_spend_threshold" :value="__('messages.high_spend_threshold')" class="dark:text-gray-300" />

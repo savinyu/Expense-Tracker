@@ -29,7 +29,7 @@ Extract these five keys:
 - "total_amount" : the final total amount paid as a plain decimal number, e.g. 12.50 (number, or null)
 - "date"         : the transaction date in YYYY-MM-DD format (string, or null)
 - "currency"     : the ISO 4217 currency code inferred from the receipt — use currency symbols
-                   (¥ → JPY, $ → USD, € → EUR, £ → GBP, A$ → AUD, C$ → CAD, S$ → SGD),
+                   (¥ → JPY, $ → USD, € → EUR, £ → GBP, A$ → AUD, C$ → CAD, S$ → SGD, ₹ → INR),
                    printed currency labels, or the country context of the receipt.
                    Return null if you cannot determine the currency with reasonable confidence.
 - "category"     : intelligently categorise the expense based on the vendor name and receipt context.

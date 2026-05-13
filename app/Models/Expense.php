@@ -15,7 +15,7 @@ class Expense extends Model
     use HasFactory;
 
     /** Supported currency codes (ISO 4217). */
-    public const CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'];
+    public const CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'INR'];
 
     /** Shared expense lifecycle. */
     public const SHARED_PERSONAL = 'personal';
@@ -32,6 +32,7 @@ class Expense extends Model
         'AUD' => 'A$',
         'CAD' => 'C$',
         'SGD' => 'S$',
+        'INR' => '₹',
     ];
 
     /** Currencies with no minor units (display 0 decimal places). */
@@ -67,5 +68,22 @@ class Expense extends Model
     public function formattedAmount(): string
     {
         return self::formatAmount($this->amount, $this->currency);
+    }
+
+    /**
+     * Return just the display symbol for a currency code, or the code itself
+     * (with a trailing space) if no symbol is registered.
+     */
+    public static function symbol(string $currency): string
+    {
+        return self::SYMBOLS[$currency] ?? ($currency . ' ');
+    }
+
+    /**
+     * Dropdown-ready label: "JPY (¥)", "INR (₹)", etc.
+     */
+    public static function label(string $currency): string
+    {
+        return $currency . ' (' . self::symbol($currency) . ')';
     }
 }

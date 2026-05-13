@@ -8,7 +8,9 @@
       "Bash(docker info *)",
       "Bash(break)",
       "Bash(grep -v \"^\\\\s*$\")",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(grep -rn \"JPY.*USD.*EUR\\\\|'¥'.*'\\\\$'\\\\|JPY:'¥'\\\\|JPY=>.'¥'\\\\|CURRENCY_SYMBOLS\\\\|ZERO_DECIMAL\\\\|CURRENCIES\" --include=\"*.php\" --include=\"*.blade.php\")",
+      "Bash(grep -rn \"JPY.*USD.*EUR.*GBP\\\\|'¥'.*'\\\\$'.*'€'\" --include=\"*.php\" --include=\"*.blade.php\" --include=\"*.js\")"
     ]
   }
 }

@@ -315,7 +315,7 @@
                                 <option value="">{{ __('messages.filter_all_currencies') }}</option>
                                 @foreach(\App\Models\Expense::CURRENCIES as $cur)
                                     <option value="{{ $cur }}" {{ request('original_currency') === $cur ? 'selected' : '' }}>
-                                        {{ $cur }}
+                                        {{ \App\Models\Expense::label($cur) }}
                                     </option>
                                 @endforeach
                             </select>
@@ -635,7 +635,7 @@
                                         @foreach(\App\Models\Expense::CURRENCIES as $cur)
                                             <option value="{{ $cur }}"
                                                 {{ old('currency', $defaultCurrency) === $cur ? 'selected' : '' }}>
-                                                {{ $cur }}
+                                                {{ \App\Models\Expense::label($cur) }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -656,7 +656,7 @@
                                     </label>
                                     <div class="relative">
                                         <span class="absolute inset-y-0 left-3 flex items-center text-gray-400 dark:text-gray-500 text-sm font-medium"
-                                              x-text="{ JPY:'¥', USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', SGD:'S$' }[currency] ?? currency"></span>
+                                              x-text="{ JPY:'¥', USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', SGD:'S$', INR:'₹' }[currency] ?? currency"></span>
                                         <input type="number" name="amount" id="field-amount" step="0.01" min="0.01"
                                                value="{{ old('amount') }}" placeholder="0.00"
                                                class="w-full pl-9 pr-3 py-2 border rounded-lg text-sm
@@ -811,7 +811,7 @@
         '#10b981', '#3b82f6', '#ef4444', '#14b8a6',
     ];
 
-    const CURRENCY_SYMBOLS  = { JPY:'¥', USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', SGD:'S$' };
+    const CURRENCY_SYMBOLS  = { JPY:'¥', USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', SGD:'S$', INR:'₹' };
     const ZERO_DECIMAL_CURR = ['JPY'];
 
     function fmtAmount(value, currency) {
