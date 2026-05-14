@@ -15,7 +15,7 @@ class Expense extends Model
     use HasFactory;
 
     /** Supported currency codes (ISO 4217). */
-    public const CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'INR'];
+    public const CURRENCIES = ['JPY', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'INR', 'VND'];
 
     /** Shared expense lifecycle. */
     public const SHARED_PERSONAL = 'personal';
@@ -33,10 +33,11 @@ class Expense extends Model
         'CAD' => 'C$',
         'SGD' => 'S$',
         'INR' => '₹',
+        'VND' => '₫',
     ];
 
     /** Currencies with no minor units (display 0 decimal places). */
-    private const ZERO_DECIMAL = ['JPY'];
+    private const ZERO_DECIMAL = ['JPY', 'VND'];
 
     protected function casts(): array
     {

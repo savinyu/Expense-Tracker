@@ -13,12 +13,14 @@ class ExpenseFactory extends Factory
 {
     // ── Demo exchange rates (JPY as the base currency) ────────────────────────
     // Hardcoded so seeding never hits the live API.
-    //   original_amount (USD) × 155.0 → base_amount (JPY)
-    //   original_amount (INR) × 1.8   → base_amount (JPY)
+    //   original_amount (USD) × 155.0   → base_amount (JPY)
+    //   original_amount (INR) × 1.8     → base_amount (JPY)
+    //   original_amount (VND) × 0.0061  → base_amount (JPY)   (1 JPY ≈ 164 VND)
     private const DEMO_RATES = [
         'JPY' => 1.0,
         'USD' => 155.0,
         'INR' => 1.8,
+        'VND' => 0.0061,
     ];
 
     // ── Category catalogue ────────────────────────────────────────────────────
