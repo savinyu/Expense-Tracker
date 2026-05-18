@@ -172,7 +172,8 @@
                         <p class="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
                             {{ $hasFilters ? __('messages.total_filtered') : __('messages.total_spent_this_month') }}
                         </p>
-                        <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1 tracking-tight">
+                        <p id="total-spent-display"
+                           class="text-2xl font-extrabold text-gray-900 dark:text-white mt-1 tracking-tight">
                             {{ \App\Models\Expense::formatAmount($primaryTotal, $defaultCurrency) }}
                         </p>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
@@ -228,14 +229,30 @@
             <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6"
                  x-data="categoryChart()" x-init="init()">
 
-                <div class="flex items-start justify-between gap-4 mb-1">
+                <div class="flex items-start justify-between gap-4 mb-1 flex-wrap">
                     <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100">{{ __('messages.spending_by_category') }}</h2>
-                    <span class="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0">
-                        {{ $defaultCurrency }}
-                    </span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        {{-- Historical month selector — updates the chart in-place via JS --}}
+                        <input
+                            type="month"
+                            id="chartMonthSelector"
+                            x-model="selectedMonth"
+                            value="{{ now()->format('Y-m') }}"
+                            max="{{ now()->format('Y-m') }}"
+                            class="text-xs px-2.5 py-1.5 rounded-lg border transition-colors
+                                   bg-white dark:bg-gray-800
+                                   text-gray-700 dark:text-gray-200
+                                   border-gray-300 dark:border-gray-700
+                                   hover:border-indigo-400 dark:hover:border-indigo-600
+                                   focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500">
+                        <span class="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                            {{ $defaultCurrency }}
+                        </span>
+                    </div>
                 </div>
 
-                <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">{{ now()->format(__('messages.month_year_format')) }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mb-5"
+                   x-text="selectedMonthLabel()"></p>
 
                 <div id="chart-empty" class="hidden py-10 text-center">
                     <p class="text-sm text-gray-400 dark:text-gray-500">{{ __('messages.no_expenses_this_month') }}</p>
@@ -366,95 +383,12 @@
             </div>
 
             {{-- ── Expense List ── --}}
-            {{-- $highSpendThreshold is in natural units (e.g. 100 = $100, 10000 = ¥10,000); --}}
-            {{-- base_amount is in minor units (×100), so multiply threshold before comparing --}}
+            {{-- Wrapped in #expense-list-container so the chart's month selector --}}
+            {{-- can swap the entire block via fetch() → innerHTML.                --}}
             <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-
-                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                    <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100">{{ __('messages.all_expenses') }}</h2>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm text-gray-400 dark:text-gray-500">
-                            {{ trans_choice('messages.entries', $expenses->count(), ['count' => $expenses->count()]) }}
-                        </span>
-                        @php $thresholdFormatted = \App\Models\Expense::formatAmount($highSpendThreshold * 100, $defaultCurrency); @endphp
-                        <span class="inline-flex items-center gap-1 text-xs text-red-400 font-medium"
-                              title="{{ __('messages.high_spend_note', ['amount' => $thresholdFormatted]) }}">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm0 6.5a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" clip-rule="evenodd"/>
-                            </svg>
-                            {{ __('messages.high_spend_badge', ['amount' => $thresholdFormatted]) }}
-                        </span>
-                    </div>
+                <div id="expense-list-container">
+                    @include('dashboard.partials.expense-list')
                 </div>
-
-                @if($expenses->isEmpty())
-                    <div class="py-16 text-center">
-                        <svg class="w-10 h-10 text-gray-300 dark:text-gray-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
-                        <p class="text-gray-400 dark:text-gray-500 text-sm">{{ __('messages.no_expenses_yet') }}</p>
-                    </div>
-                @else
-                    <ul class="divide-y divide-gray-50 dark:divide-gray-800">
-                        @foreach($expenses as $expense)
-                            <li class="flex items-center gap-4 px-6 py-4
-                                       hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
-                                <x-category-icon :category="$expense->category"/>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                        {{ $expense->description ?? '—' }}
-                                    </p>
-                                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-                                        <span class="inline-block px-2 py-px rounded-full text-xs font-medium
-                                                     bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400
-                                                     whitespace-nowrap">
-                                            {{ $expense->category }}
-                                        </span>
-                                        @if($expense->shared_status === \App\Models\Expense::SHARED_SHARED)
-                                            <span class="inline-flex items-center gap-1 px-2 py-px rounded-full text-xs font-medium
-                                                         bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300
-                                                         whitespace-nowrap">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                </svg>
-                                                {{ __('messages.shared_badge') }}
-                                            </span>
-                                        @elseif($expense->shared_status === \App\Models\Expense::SHARED_PENDING)
-                                            <span class="inline-flex items-center gap-1 px-2 py-px rounded-full text-xs font-medium
-                                                         bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300
-                                                         whitespace-nowrap">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                {{ __('messages.pending_badge') }}
-                                            </span>
-                                        @endif
-                                        <span class="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                                            {{ $expense->expense_date->format('M d, Y') }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="text-right shrink-0">
-                                    <p class="text-sm font-bold whitespace-nowrap tabular-nums
-                                              {{ ($expense->base_amount ?? $expense->amount) >= $highSpendThreshold * 100
-                                                  ? 'text-red-600 dark:text-red-400'
-                                                  : 'text-gray-900 dark:text-gray-100' }}">
-                                        {{ $expense->formattedAmount() }}
-                                    </p>
-                                    @if($expense->currency !== $defaultCurrency && $expense->base_amount)
-                                        <p class="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-                                            {{ \App\Models\Expense::formatAmount($expense->base_amount, $defaultCurrency) }}
-                                        </p>
-                                    @endif
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-
             </div>
 
         </div>
@@ -827,21 +761,70 @@
 
     function categoryChart() {
         return {
+            // Default to the current month (e.g. "2026-05"). Bound to the
+            // <input type="month"> via x-model.
+            selectedMonth: '{{ now()->format('Y-m') }}',
+
             init() {
                 this.$nextTick(() => {
                     this.loadChart();
                 });
+
+                // Re-fetch (and update the chart in-place) whenever the user
+                // picks a different month from the selector.
+                this.$watch('selectedMonth', () => this.loadChart());
+            },
+
+            /**
+             * Human-readable label for the currently selected month, e.g.
+             * "May 2026". Used in the subtitle under the chart title.
+             */
+            selectedMonthLabel() {
+                if (!this.selectedMonth) return '';
+                const [y, m] = this.selectedMonth.split('-');
+                const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+                return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
             },
 
             loadChart() {
-                // Forward active filter params so the chart reflects the same
-                // filtered dataset as the expense list below it.
+                // Forward active filter params (category, currency, view, etc.)
+                // so the chart honors the page-level filter UI as well.
                 const params = new URLSearchParams(window.location.search);
+
+                // Layer the month selector ON TOP of the URL params — the
+                // controller treats month+year as the highest-priority date
+                // scope, so this always wins over start_date/end_date.
+                if (this.selectedMonth) {
+                    const [year, month] = this.selectedMonth.split('-');
+                    params.set('year',  year);
+                    params.set('month', month);
+                }
+
                 fetch(`{{ route('dashboard.chart-data') }}?${params.toString()}`)
                     .then(res => res.json())
-                    .then(data => {
-                        const labels = Object.keys(data);
-                        const values = Object.values(data).map(v => v / 100);
+                    .then(response => {
+                        // ── Swap the expense-list HTML in place ─────────────
+                        // The controller returns a fully-rendered partial that
+                        // includes the header (with the count), the empty
+                        // state, and the <ul>. Replacing innerHTML is the
+                        // cleanest way to keep them in sync with the chart.
+                        const listContainer = document.getElementById('expense-list-container');
+                        if (listContainer && typeof response.html === 'string') {
+                            listContainer.innerHTML = response.html;
+                        }
+
+                        // ── Update the Total Spent summary card ─────────────
+                        // Pre-formatted by the controller with the user's
+                        // currency symbol; we just drop it in as text.
+                        const totalDisplay = document.getElementById('total-spent-display');
+                        if (totalDisplay && typeof response.totalSpent === 'string') {
+                            totalDisplay.innerText = response.totalSpent;
+                        }
+
+                        // ── Update the chart from response.chartData ────────
+                        const chartData = response.chartData ?? {};
+                        const labels = Object.keys(chartData);
+                        const values = Object.values(chartData).map(v => v / 100);
                         const total  = values.reduce((s, v) => s + v, 0);
                         const colors = labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
 

@@ -10,7 +10,9 @@
       "Bash(grep -v \"^\\\\s*$\")",
       "Bash(xargs cat *)",
       "Bash(grep -rn \"JPY.*USD.*EUR\\\\|'¥'.*'\\\\$'\\\\|JPY:'¥'\\\\|JPY=>.'¥'\\\\|CURRENCY_SYMBOLS\\\\|ZERO_DECIMAL\\\\|CURRENCIES\" --include=\"*.php\" --include=\"*.blade.php\")",
-      "Bash(grep -rn \"JPY.*USD.*EUR.*GBP\\\\|'¥'.*'\\\\$'.*'€'\" --include=\"*.php\" --include=\"*.blade.php\" --include=\"*.js\")"
+      "Bash(grep -rn \"JPY.*USD.*EUR.*GBP\\\\|'¥'.*'\\\\$'.*'€'\" --include=\"*.php\" --include=\"*.blade.php\" --include=\"*.js\")",
+      "Bash(grep -A 4 'month'\\\\'' && $request->filled\\('\\\\''year' /Users/Savinyu.Pant/Desktop/Hackathon/app/Http/Controllers/DashboardController.php)",
+      "Bash(grep -n 'Expense List\\\\|expenses->isEmpty\\\\|divide-y divide-gray\\\\|<ul class\\\\|<li class\\\\|@foreach.$expenses\\\\|@endforeach\\\\|all_expenses' /Users/Savinyu.Pant/Desktop/Hackathon/resources/views/dashboard.blade.php)"
     ]
   }
 }
